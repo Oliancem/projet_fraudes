@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.impute import SimpleImputer
 
 # Charger le modèle à partir du fichier
-loaded_model = joblib.load('model_random_forest.pkl')
+loaded_model = joblib.load('model_random_forest.pkl') # Changer le .pkl en fonction de l'aglorythme que vous utilisez
 
 # Lire les nouvelles données
 new_data = pd.read_csv('CSV/principal.csv')

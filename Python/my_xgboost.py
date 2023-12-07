@@ -1,4 +1,5 @@
 import pandas as pd
+import joblib
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score, classification_report
@@ -38,6 +39,13 @@ model_xgboost.fit(X_resampled, y_resampled)
 
 # Prédiction sur l'ensemble de test
 y_pred_xgboost = model_xgboost.predict(X_test)
+
+# Entraînement du modèle XGBoost pour la détection de fraude sur les données réduites
+model_xgboost = XGBClassifier(scale_pos_weight=len(y_train[y_train==0])/len(y_train[y_train==1]), random_state=42)
+model_xgboost.fit(X_resampled, y_resampled)
+
+# Sauvegarde du modèle XGBoost
+joblib.dump(model_xgboost, 'model_xgboost_with_pca.pkl')
 
 # Évaluation du modèle
 print("XGBoost Classifier Model:")
