@@ -1,0 +1,60 @@
+import pandas as pd
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.decomposition import PCA
+from imblearn.over_sampling import RandomOverSampler
+from sklearn.metrics import classification_report, accuracy_score
+
+# Chargement des données
+data = pd.read_csv('CSV/principal.csv')
+
+# Suppression des colonnes 'nameOrig' et 'nameDest'
+data = data.drop(['nameOrig', 'nameDest'], axis=1)
+
+# Encodage de la variable 'type'
+label_encoder = LabelEncoder()
+data['type'] = label_encoder.fit_transform(data['type'])
+
+# Imputation des valeurs manquantes en utilisant la moyenne
+imputer = SimpleImputer(strategy='mean')
+data_imputed = pd.DataFrame(imputer.fit_transform(data), columns=data.columns)
+
+# Arrondir la colonne 'isFraud' au nombre entier le plus proche
+data_imputed['isFraud'] = data_imputed['isFraud'].round().astype(int)
+
+# Division des données en ensembles d'entraînement et de test
+X = data_imputed.drop('isFraud', axis=1)
+y = data_imputed['isFraud']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Utilisation de RandomOverSampler pour gérer le déséquilibre de classe
+oversampler = RandomOverSampler(random_state=42)
+X_resampled, y_resampled = oversampler.fit_resample(X_train, y_train)
+
+# Standardisation des données avant PCA
+scaler = StandardScaler()
+X_resampled_scaled = scaler.fit_transform(X_resampled)
+
+# Réduction de dimension avec PCA
+pca = PCA(n_components=min(X_resampled_scaled.shape[0], X_resampled_scaled.shape[1]))
+X_resampled_pca = pca.fit_transform(X_resampled_scaled)
+
+
+# Entraînement du modèle RandomForest pour la détection de fraude sur les données réduites
+model_random_forest = RandomForestClassifier(class_weight='balanced', random_state=42)
+model_random_forest.fit(X_resampled_pca, y_resampled)
+
+# Sauvegarde du modèle
+joblib.dump(model_random_forest, 'model_random_forest_with_pca.pkl')
+
+# Évaluation du modèle sur les données de test
+X_test_scaled = scaler.transform(X_test)
+X_test_pca = pca.transform(X_test_scaled)
+y_pred = model_random_forest.predict(X_test_pca)
+
+print("Random Forest Model with PCA:")
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
